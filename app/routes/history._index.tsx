@@ -31,10 +31,12 @@ export default function History() {
           <TableBody<Selectable<OpenAILog>> iterator={logs}>
             {(log) => (
               <>
-                <TableCell>
-                  <span className='text-sm'>{log.tables}</span>
+                <TableCell className='max-w-[400px]'>
+                  <span className='text-sm'>
+                    {log.tables.split(',').map((table, idx) => `${idx > 0 ? ', ' : ''}${table}`)}
+                  </span>
                 </TableCell>
-                <TableCell>{log.prompt}</TableCell>
+                <TableCell className='max-w-[600px]'>{log.prompt}</TableCell>
                 <TableCell>
                   <span className='text-sm'>{new Date(log.last_used_at).toString()}</span>
                 </TableCell>
