@@ -14,12 +14,14 @@ import runMigrations from 'migrations/runMigrations'
 
 const ABORT_DELAY = 5_000
 
-export default function handleRequest(
+export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
   remixContext: EntryContext
 ) {
+  await runMigrations()
+
   return isbot(request.headers.get('user-agent'))
     ? handleBotRequest(
         request,
@@ -92,8 +94,6 @@ function handleBrowserRequest(
       />,
       {
         async onShellReady() {
-          await runMigrations()
-
           const body = new PassThrough()
 
           responseHeaders.set('Content-Type', 'text/html')
