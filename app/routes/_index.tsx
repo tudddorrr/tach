@@ -106,7 +106,14 @@ export default function Index() {
       </div>
       <div className='w-1/2 bg-slate-200 flex flex-col'>
         {!results && <pre className='p-8 grow'>Waiting...</pre>}
-        {results && tab === TAB_RESULTS && <pre className='p-8 grow whitespace-pre-wrap max-h-screen overflow-y-scroll'>{results.data.csv}</pre>}
+        {results && tab === TAB_RESULTS &&
+          <pre className='p-8 grow whitespace-pre-wrap max-h-screen overflow-y-scroll'>
+            {results.error &&
+              <div role='alert' className='p-4 rounded bg-red-200 text-red-800'>{results.error}</div>
+            }
+            {!results.error && results.data.csv}
+          </pre>
+        }
         {results && tab === TAB_QUERY && <pre className='p-8 grow whitespace-pre-wrap'>{results.query}</pre>}
 
         {results &&

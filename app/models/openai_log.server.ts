@@ -77,6 +77,17 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
   const prompt = body.get('prompt')
   const tables = body.getAll('tables')
 
+  if (!prompt || tables.length === 0) {
+    return json({
+      error: 'Missing tables or prompt',
+      data: {
+        json: [],
+        csv: ''
+      },
+      query: ''
+    }, 503)
+  }
+
   const cache = new URLSearchParams(request.url).get('cache')
   const checkCache = cache ? cache === '1' : true
 
@@ -117,7 +128,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       await remoteDB.destroy()
 
       return json({
-        message: 'No response from OpenAI',
+        error: 'No response from OpenAI',
         data: {
           json: [],
           csv: ''
@@ -156,7 +167,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     const body = rows.map((row) => Object.values(row).join()).join('\n')
 
     return json({
-      message: '',
+      error: '',
       data: {
         json: rows,
         csv: header + body
@@ -179,7 +190,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       .execute()
 
     return json({
-      message: 'Invalid query supplied by OpenAI',
+      error: 'Invalid query supplied by OpenAI',
       data: {
         json: [],
         csv: ''
