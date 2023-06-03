@@ -4,7 +4,7 @@
   "scripts": {
     "build": "remix build",
     "dev": "remix dev",
-    "start": "remix-serve build",
+    "start": "env $(cat .env | grep -v '#' | xargs) remix-serve build",
     "typecheck": "tsc"
   },
   "dependencies": {
