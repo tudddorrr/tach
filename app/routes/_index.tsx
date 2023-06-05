@@ -7,6 +7,7 @@ import Button from '~/components/Button'
 import Link from '~/components/Link'
 import { getTables } from '~/models/lexicon_table.server'
 import { getQueryFromPromptAndExecute } from '~/models/openai_log.server'
+import Fuse from 'fuse.js'
 
 export const meta: V2_MetaFunction = () => {
   return [{ title: 'Query | Tach' }]
@@ -30,6 +31,18 @@ export default function Index() {
 
   const [tab, setTab] = useState(TAB_RESULTS)
   const [copied, setCopied] = useState(false)
+
+  const [tablesSearch, setTablesSearch] = useState('')
+  const tablesToShow = useMemo(() => {
+    if (!tablesSearch) return tables
+
+    const fuse = new Fuse(tables, {
+      keys: ['table_name', 'description'],
+      threshold: 0.4
+    })
+
+    return fuse.search(tablesSearch).map(({ item }) => item)
+  }, [tables, tablesSearch])
 
   const location = useLocation()
 
@@ -70,10 +83,18 @@ export default function Index() {
 
           <div>
             <fieldset>
-              <p className='font-medium'>Tables</p>
+              <p className='font-medium'>Tables ({tablesToShow.length})</p>
+              <input
+                type='search'
+                className='w-full border border-gray-300 rounded mt-2 p-2'
+                placeholder='Search'
+                onChange={(e) => setTablesSearch(e.target.value)}
+                value={tablesSearch}
+              />
+
               <div className='mt-2 overflow-y-scroll max-h-96 rounded'>
-                {tables.length === 0 && <p>No tables found - run the Scan tool from the Lexicon</p>}
-                {tables.map((table, idx) => (
+                {tablesToShow.length === 0 && <p>No tables found</p>}
+                {tablesToShow.map((table, idx) => (
                   <label key={table.table_name} className={clsx('cursor-pointer p-4 flex flex-row items-center gap-4', {
                     'bg-slate-300': idx % 2 !== 0,
                     'bg-slate-200': idx % 2 === 0,
