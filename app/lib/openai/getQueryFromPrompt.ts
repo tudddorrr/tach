@@ -22,15 +22,24 @@ type OpenAIApiError = Error & {
 }
 
 export default async function getQueryFromPrompt(createTableSyntaxes: string[], prompt: string, blocklistText: string): Promise<QueryResponse> {
-  const content = `
-    Using these MySQL tables: ${createTableSyntaxes.join(',\n')}
-    Write a select query for the following use-case: ${prompt}
-    ${blocklistText ? 'The query should not include the following columns: ' + blocklistText : ''}
+  const systemContent = `
+    You are a tool for translation natural language questions about company data into SQL queries that only select data and never modify it.
+    Only return the query and nothing else.
+    ${blocklistText ? 'The generated query must never contain references to any of the following columns: ' + blocklistText : ''}
   `
+
+  const userContent = `
+    Using these MySQL tables: ${createTableSyntaxes.join(',\n')}
+    ${prompt}
+  `
+
   try {
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content }]
+      messages: [
+        { role: 'system', content: systemContent },
+        { role: 'user', content: userContent }
+      ]
     })
 
     return {
