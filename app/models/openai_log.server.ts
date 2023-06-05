@@ -115,6 +115,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     const blocklist = await localDB
       .selectFrom('blocklist_items')
       .selectAll()
+      .where('table_name', 'in', tables as string[])
       .execute()
 
     const createTableSyntaxes = await getPromptTables(remoteDB, tables as string[], blocklist)
