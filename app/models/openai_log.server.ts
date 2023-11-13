@@ -1,4 +1,4 @@
-import type { ActionArgs} from '@remix-run/node'
+import type { ActionArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import createLocalDatabaseConnection from '~/lib/database/createLocalDatabaseConnection'
 import type { Connection, RowDataPacket } from 'mysql2/promise'
@@ -17,6 +17,7 @@ export type OpenAILog = {
   tokens_used: number
   created_at: ColumnType<string, string, never>,
   last_used_at: ColumnType<string, string, string>
+  prompt_hidden: ColumnType<number, number | undefined, number>
 }
 
 type CreateTableSyntaxRow = RowDataPacket & {
@@ -123,7 +124,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     const res = await getQueryFromPrompt(createTableSyntaxes, prompt as string, blocklistText)
     sql = sanitiseSQL(res.sql ?? '')
     tokensUsed = res.tokensUsed
-  
+
     if (!sql) {
       await localDB.destroy()
       await remoteDB.destroy()
@@ -145,7 +146,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     if (existingLog) {
       await localDB
         .updateTable('openai_logs')
-        .set({ last_used_at: new Date().toISOString() })
+        .set({ last_used_at: new Date().toISOString(), prompt_hidden: 0 })
         .where('id', '=', existingLog.id)
         .execute()
     } else {
@@ -206,10 +207,31 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
 
 export async function getOpenAILogs() {
   const localDB = createLocalDatabaseConnection()
-  return await localDB
+
+  const res = await localDB
     .selectFrom('openai_logs')
     .selectAll()
     .where('success', '=', 1)
+    .where('prompt_hidden', '=', 0)
     .orderBy('last_used_at', 'desc')
     .execute()
+
+  await localDB.destroy()
+
+  return res
+}
+
+export async function hideLog({ request }: ActionArgs) {
+  const body = await request.formData()
+  const id = body.get('id') as string
+
+  const localDB = createLocalDatabaseConnection()
+
+  await localDB
+    .updateTable('openai_logs')
+    .set({ prompt_hidden: 1 })
+    .where('id', '=', +id)
+    .execute()
+
+  await localDB.destroy();
 }

@@ -51,14 +51,14 @@ export async function scan() {
 
   await remoteDB.destroy()
   await localDB.destroy()
-  
+
   return res;
 }
 
 export async function getTables({ request }: LoaderArgs) {
   const localDB = createLocalDatabaseConnection()
 
-  return await localDB
+  const res = await localDB
     .selectFrom('lexicon_tables')
     .selectAll()
 
@@ -69,6 +69,10 @@ export async function getTables({ request }: LoaderArgs) {
         .where('blocklist_items.column_name', '=', '*')
     )))
     .execute()
+
+  await localDB.destroy()
+
+  return res
 }
 
 export async function updateTableDescription({ request }: ActionArgs) {
