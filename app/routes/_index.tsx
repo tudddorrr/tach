@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs, V2_MetaFunction} from '@remix-run/node'
+import type { ActionArgs, LoaderArgs, V2_MetaFunction } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Form, useActionData, useLoaderData, useLocation, useNavigation } from '@remix-run/react'
 import clsx from 'clsx'
@@ -32,6 +32,19 @@ export default function Index() {
   const [tab, setTab] = useState(TAB_RESULTS)
   const [copied, setCopied] = useState(false)
 
+  const location = useLocation()
+
+  const prompt = useMemo(() => {
+    return new URLSearchParams(location.search).get('prompt') ?? ''
+  }, [location.search])
+
+  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urlTables = new URLSearchParams(location.search).get('tables') ?? ''
+    setSelectedTables(urlTables.split(','))
+  }, [location.search])
+
   const [tablesSearch, setTablesSearch] = useState('')
   const tablesToShow = useMemo(() => {
     if (!tablesSearch) return tables
@@ -41,23 +54,31 @@ export default function Index() {
       threshold: 0.4
     })
 
-    return fuse.search(tablesSearch).map(({ item }) => item)
-  }, [tables, tablesSearch])
+    const foundTables = fuse.search(tablesSearch).map(({ item }) => item)
+    const alreadySelected = tables.filter((table) => selectedTables.includes(table.table_name))
 
-  const location = useLocation()
-
-  const prompt = useMemo(() => {
-    return new URLSearchParams(location.search).get('prompt') ?? ''
-  }, [location.search])
-
-  const selectedTables = useMemo(() => {
-    return (new URLSearchParams(location.search).get('tables') ?? '').split(',')
-  }, [location.search])
+    return [...new Set(alreadySelected.concat(foundTables))]
+  }, [selectedTables, tables, tablesSearch])
 
   useEffect(() => {
     setTab(TAB_RESULTS)
     setCopied(false)
   }, [results])
+
+  const toggleTable = (e: React.ChangeEvent<HTMLInputElement>, tableName: string) => {
+    if (e.target.checked) {
+      setSelectedTables((curr) => [...curr, tableName])
+    } else {
+      setSelectedTables((curr) => curr.filter((name) => name !== tableName))
+    }
+  }
+
+  const sortedTables = useMemo(() => {
+    return [
+      ...tablesToShow.filter((table) => selectedTables.includes(table.table_name)).sort((a, b) => a.table_name.localeCompare(b.table_name)),
+      ...tablesToShow.filter((table) => !selectedTables.includes(table.table_name)).sort((a, b) => a.table_name.localeCompare(b.table_name))
+    ]
+  }, [tablesToShow, selectedTables])
 
   return (
     <div className='flex'>
@@ -94,7 +115,7 @@ export default function Index() {
 
               <div className='mt-2 overflow-y-scroll max-h-96 rounded'>
                 {tablesToShow.length === 0 && <p>No tables found</p>}
-                {tablesToShow.map((table, idx) => (
+                {sortedTables.map((table, idx) => (
                   <label key={table.table_name} className={clsx('cursor-pointer p-4 flex flex-row items-center gap-4', {
                     'bg-slate-300': idx % 2 !== 0,
                     'bg-slate-200': idx % 2 === 0,
@@ -104,7 +125,8 @@ export default function Index() {
                       name='tables'
                       className='w-4 h-4'
                       value={table.table_name}
-                      defaultChecked={selectedTables.includes(table.table_name)}
+                      onChange={(e) => toggleTable(e, table.table_name)}
+                      checked={selectedTables.includes(table.table_name)}
                     />
                     {table.table_name}
                   </label>
@@ -149,7 +171,7 @@ export default function Index() {
                     setCopied(true)
                   }}
                 >
-                  {copied ? 'Copied' :  'Copy CSV'}
+                  {copied ? 'Copied' : 'Copy CSV'}
                 </Button>
               </div>
             }
