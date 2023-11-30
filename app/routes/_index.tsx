@@ -74,11 +74,16 @@ export default function Index() {
   }
 
   const sortedTables = useMemo(() => {
+    let unpinnedTables = tablesToShow.filter((table) => !selectedTables.includes(table.table_name))
+    if (tablesSearch.length === 0) {
+      unpinnedTables = unpinnedTables.sort((a, b) => a.table_name.localeCompare(b.table_name))
+    }
+
     return [
       ...tablesToShow.filter((table) => selectedTables.includes(table.table_name)).sort((a, b) => a.table_name.localeCompare(b.table_name)),
-      ...tablesToShow.filter((table) => !selectedTables.includes(table.table_name)).sort((a, b) => a.table_name.localeCompare(b.table_name))
+      ...unpinnedTables
     ]
-  }, [tablesToShow, selectedTables])
+  }, [tablesToShow, selectedTables, tablesSearch])
 
   return (
     <div className='flex'>
