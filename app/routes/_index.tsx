@@ -41,9 +41,11 @@ export default function Index() {
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
 
   useEffect(() => {
-    const urlTables = new URLSearchParams(location.search).get('tables') ?? ''
-    setSelectedTables(urlTables.split(','))
-  }, [location.search])
+    if (selectedTables.length === 0) {
+      const urlTables = new URLSearchParams(location.search).get('tables') ?? ''
+      setSelectedTables(urlTables.split(','))
+    }
+  }, [selectedTables, location.search])
 
   const [tablesSearch, setTablesSearch] = useState('')
   const tablesToShow = useMemo(() => {
