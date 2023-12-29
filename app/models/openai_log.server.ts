@@ -96,7 +96,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
   const localDB = createLocalDatabaseConnection()
   const remoteDB = await createRemoteDatabaseConnection()
 
-  const existingLog = checkCache
+  let existingLog = checkCache
     ? await localDB
       .selectFrom('openai_logs')
       .selectAll()
@@ -106,6 +106,10 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       .orderBy('created_at', 'desc')
       .executeTakeFirst()
     : null
+
+  if (existingLog?.prompt_hidden === 1) {
+    existingLog = null
+  }
 
   let tokensUsed = 0
 
