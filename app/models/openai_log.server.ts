@@ -77,6 +77,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
   const body = await request.formData()
   const prompt = body.get('prompt')
   const tables = body.getAll('tables')
+  const checkCache = body.get('cache') === '1'
 
   if (!prompt || tables.length === 0) {
     return json({
@@ -89,14 +90,12 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     }, 503)
   }
 
-  const checkCache = new URLSearchParams(request.url).get('cache') === '1'
-
   let sql = ''
 
   const localDB = createLocalDatabaseConnection()
   const remoteDB = await createRemoteDatabaseConnection()
 
-  let existingLog = checkCache
+  const existingLog = checkCache
     ? await localDB
       .selectFrom('openai_logs')
       .selectAll()
@@ -107,7 +106,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       .executeTakeFirst()
     : null
 
-  let useExistingLog = Boolean(existingLog)
+  let useExistingLog = existingLog !== null
   if (existingLog?.prompt_hidden === 1) {
     useExistingLog = false
   }

@@ -150,7 +150,7 @@ export default function Index() {
             </div>
           </div>
 
-          <input type='hidden' value={cache} />
+          <input type='hidden' name='cache' value={cache} />
 
           <Button
             disabled={navigation.state !== 'idle'}
