@@ -38,6 +38,10 @@ export default function Index() {
     return new URLSearchParams(location.search).get('prompt') ?? ''
   }, [location.search])
 
+  const cache = useMemo(() => {
+    return new URLSearchParams(location.search).get('cache') ?? '1'
+  }, [location.search])
+
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
 
   useEffect(() => {
@@ -145,6 +149,8 @@ export default function Index() {
               <Link to='/lexicon'>Lexicon</Link>
             </div>
           </div>
+
+          <input type='hidden' value={cache} />
 
           <Button
             disabled={navigation.state !== 'idle'}

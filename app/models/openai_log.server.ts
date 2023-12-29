@@ -89,8 +89,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
     }, 503)
   }
 
-  const cache = new URLSearchParams(request.url).get('cache')
-  const checkCache = cache ? cache === '1' : true
+  const checkCache = new URLSearchParams(request.url).get('cache') === '1'
 
   let sql = ''
 
