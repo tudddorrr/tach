@@ -107,14 +107,15 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       .executeTakeFirst()
     : null
 
+  let useExistingLog = Boolean(existingLog)
   if (existingLog?.prompt_hidden === 1) {
-    existingLog = null
+    useExistingLog = false
   }
 
   let tokensUsed = 0
 
-  if (existingLog) {
-    sql = existingLog.query
+  if (useExistingLog) {
+    sql = existingLog!.query
   } else {
     const blocklist = await localDB
       .selectFrom('blocklist_items')
