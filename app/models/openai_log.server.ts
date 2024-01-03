@@ -106,7 +106,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       .executeTakeFirst()
     : null
 
-  let useExistingLog = existingLog !== null
+  let useExistingLog = Boolean(existingLog)
   if (existingLog?.prompt_hidden === 1) {
     useExistingLog = false
   }

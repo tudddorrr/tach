@@ -2,7 +2,7 @@ import type { ActionArgs, LoaderArgs, V2_MetaFunction } from '@remix-run/node'
 import { json } from '@remix-run/node'
 import { Form, useActionData, useLoaderData, useLocation, useNavigation } from '@remix-run/react'
 import clsx from 'clsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Button from '~/components/Button'
 import Link from '~/components/Link'
 import { getTables } from '~/models/lexicon_table.server'
@@ -43,11 +43,13 @@ export default function Index() {
   }, [location.search])
 
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  const tablesSelectedRef = useRef(false)
 
   useEffect(() => {
-    if (selectedTables.length === 0) {
+    if (!tablesSelectedRef.current) {
       const urlTables = new URLSearchParams(location.search).get('tables') ?? ''
       setSelectedTables(urlTables.split(','))
+      tablesSelectedRef.current = true
     }
   }, [selectedTables, location.search])
 
