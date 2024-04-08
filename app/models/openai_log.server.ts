@@ -22,7 +22,8 @@ export type OpenAILog = {
 
 type CreateTableSyntaxRow = RowDataPacket & {
   Table: string
-  'Create Table': string
+  'Create Table'?: string
+  'Create View'?: string
 }
 
 type QueryRow = RowDataPacket & {
@@ -48,7 +49,9 @@ async function getPromptTables(connection: Connection, tables: string[], blockli
   const createTableSyntaxes = await Promise.all(tablesToSearch.map(async (tableName) => {
     try {
       const [createTableResults] = await connection.execute<CreateTableSyntaxRow[]>(`SHOW CREATE TABLE ${tableName}`)
-      return createTableResults[0]['Create Table']
+      const row = createTableResults[0]
+
+      return row['Create Table'] ?? row['Create View']
     } catch (err) {
       return null
     }
