@@ -24,13 +24,9 @@ type OpenAIApiError = Error & {
 export default async function getQueryFromPrompt(createTableSyntaxes: string[], prompt: string, blocklistText: string): Promise<QueryResponse> {
   const systemContent = `
     You are a tool for translation natural language questions about company data into SQL queries that only select data and never modify it.
+    These MySQL tables or views are available to use: ${createTableSyntaxes.join(',\n')}
     Only return the query and nothing else.
     ${blocklistText ? 'The generated query must never contain references to any of the following columns: ' + blocklistText : ''}
-  `
-
-  const userContent = `
-    Using these MySQL tables: ${createTableSyntaxes.join(',\n')}
-    ${prompt}
   `
 
   try {
@@ -38,7 +34,7 @@ export default async function getQueryFromPrompt(createTableSyntaxes: string[], 
       model: 'gpt-4',
       messages: [
         { role: 'system', content: systemContent },
-        { role: 'user', content: userContent }
+        { role: 'user', content: prompt }
       ]
     })
 
