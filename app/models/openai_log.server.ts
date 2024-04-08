@@ -30,8 +30,8 @@ type QueryRow = RowDataPacket & {
   [key: string]: any
 }
 
-function stripExcessCharacters(createTableSyntax: string): string {
-  return createTableSyntax
+function stripExcessCharacters(createSyntax: string): string {
+  return createSyntax
     .replace(/ ENGINE(.*)/, '')
     .replaceAll('  ', ' ')
     .replaceAll('\n', '')
@@ -39,6 +39,14 @@ function stripExcessCharacters(createTableSyntax: string): string {
     .replaceAll(' NOT NULL', '')
     .replaceAll(' AUTO_INCREMENT', '')
     .replaceAll(' unsigned', '')
+    .replace(/CREATE ALGORITHM=(.*) DEFINER=`(.*)` SQL SECURITY DEFINER VIEW `(.*)` AS (select|SELECT)/, '')
+}
+
+function createViewSyntax(tableName: string, createViewSyntax: string): string {
+  const parsedSyntax = createViewSyntax
+    .replace(/CREATE ALGORITHM=(.*) DEFINER=`(.*)` SQL SECURITY DEFINER VIEW `(.*)` AS (select|SELECT)/, '');
+
+  return `CREATE VIEW \`${tableName}\` AS SELECT ${parsedSyntax}`
 }
 
 async function getPromptTables(connection: Connection, tables: string[], blocklist: BlocklistItem[]): Promise<string[]> {
@@ -51,7 +59,7 @@ async function getPromptTables(connection: Connection, tables: string[], blockli
       const [createTableResults] = await connection.execute<CreateTableSyntaxRow[]>(`SHOW CREATE TABLE ${tableName}`)
       const row = createTableResults[0]
 
-      return row['Create Table'] ?? row['Create View']
+      return row['Create Table'] ?? createViewSyntax(tableName, row['Create View']!)
     } catch (err) {
       return null
     }
