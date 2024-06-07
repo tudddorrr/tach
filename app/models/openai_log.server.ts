@@ -85,14 +85,15 @@ function sanitiseSQL(sql: string) {
     .replaceAll(/( )\1{1,}/g, ' ') // replace groups of multiple spaces (2+) with a single one
 }
 
-function handleError(error: Error) {
+function handleError(error: Error, extra: { [key: string]: any } = {}) {
   return json({
     error: error.message,
     data: {
       json: [],
       csv: ''
     },
-    query: ''
+    query: '',
+    ...extra
   }, 503)
 }
 
@@ -231,7 +232,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       })
       .execute()
 
-    return handleError(new Error('Invalid query supplied by OpenAI'))
+    return handleError(new Error('Invalid query supplied by OpenAI'), { query: sql })
   } finally {
     await cleanupDBs()
   }
