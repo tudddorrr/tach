@@ -5,7 +5,8 @@ import type { Connection, RowDataPacket } from 'mysql2/promise'
 import type { BlocklistItem } from './blocklist_item.server'
 import createRemoteDatabaseConnection from '~/lib/database/createRemoteDatabaseConnection'
 import getQueryFromPrompt from '~/lib/openai/getQueryFromPrompt'
-import type { ColumnType, Generated } from 'kysely'
+import type { ColumnType, Generated, Kysely } from 'kysely'
+import type { Database } from '~/lib/types/Database'
 
 export type OpenAILog = {
   id: Generated<number>,
@@ -84,6 +85,35 @@ function sanitiseSQL(sql: string) {
     .replaceAll(/( )\1{1,}/g, ' ') // replace groups of multiple spaces (2+) with a single one
 }
 
+function handleError(error: Error) {
+  return json({
+    error: error.message,
+    data: {
+      json: [],
+      csv: ''
+    },
+    query: ''
+  }, 503)
+}
+
+async function createLocalAndRemoteDatabaseConnection(): Promise<{
+  localDB: Kysely<Database>,
+  remoteDB: Connection,
+  cleanupDBs: () => void
+}> {
+  const localDB = createLocalDatabaseConnection()
+  const remoteDB = await createRemoteDatabaseConnection()
+
+  return {
+    localDB: createLocalDatabaseConnection(),
+    remoteDB: await createRemoteDatabaseConnection(),
+    cleanupDBs: async () => {
+      await localDB.destroy()
+      await remoteDB.destroy()
+    }
+  }
+}
+
 export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
   const body = await request.formData()
   const prompt = body.get('prompt')
@@ -103,8 +133,7 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
 
   let sql = ''
 
-  const localDB = createLocalDatabaseConnection()
-  const remoteDB = await createRemoteDatabaseConnection()
+  const { localDB, remoteDB, cleanupDBs } = await createLocalAndRemoteDatabaseConnection()
 
   const existingLog = checkCache
     ? await localDB
@@ -135,22 +164,19 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
 
     const createTableSyntaxes = await getPromptTables(remoteDB, tables as string[], blocklist)
     const blocklistText = buildBlocklistText(blocklist)
-    const res = await getQueryFromPrompt(createTableSyntaxes, prompt as string, blocklistText)
-    sql = sanitiseSQL(res.sql ?? '')
-    tokensUsed = res.tokensUsed
 
-    if (!sql) {
-      await localDB.destroy()
-      await remoteDB.destroy()
-
-      return json({
-        error: 'No response from OpenAI',
-        data: {
-          json: [],
-          csv: ''
-        },
-        query: ''
-      }, 503)
+    try {
+      const res = await getQueryFromPrompt(createTableSyntaxes, prompt as string, blocklistText)
+      sql = sanitiseSQL(res.sql ?? '')
+      tokensUsed = res.tokensUsed
+  
+      if (!sql) {
+        await cleanupDBs()
+        return handleError(new Error('No response from OpenAI'))
+      }
+    } catch (err) {
+      await cleanupDBs()
+      return handleError(err as Error)
     }
   }
 
@@ -205,17 +231,9 @@ export async function getQueryFromPromptAndExecute({ request }: ActionArgs) {
       })
       .execute()
 
-    return json({
-      error: 'Invalid query supplied by OpenAI',
-      data: {
-        json: [],
-        csv: ''
-      },
-      query: sql
-    }, 503)
+    return handleError(new Error('Invalid query supplied by OpenAI'))
   } finally {
-    await localDB.destroy()
-    await remoteDB.destroy()
+    await cleanupDBs()
   }
 }
 
