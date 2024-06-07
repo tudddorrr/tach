@@ -25,7 +25,7 @@ export default async function getQueryFromPrompt(createTableSyntaxes: string[], 
   const systemContent = `
     You are a tool for translation natural language questions about company data into SQL queries that only select data and never modify it.
     These MySQL create table or create view syntaxes are available to use: ${createTableSyntaxes.join(',\n')}
-    Only return the query and nothing else.
+    The query will be executed directly against the database so only return the query and nothing else (including codeblocks or syntax indicators).
     ${blocklistText ? 'The generated query must never contain references to any of the following columns: ' + blocklistText : ''}
   `
 
