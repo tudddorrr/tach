@@ -169,12 +169,12 @@ export default function Index() {
             {results.error &&
               <div role='alert' className='p-4 rounded bg-red-200 text-red-800'>{results.error}</div>
             }
-            {!results.error && results.data.csv}
+            {!results.error && (results?.data?.csv ?? 'No results - something may have gone wrong')}
           </pre>
         }
         {results && tab === TAB_QUERY && <pre className='p-8 grow whitespace-pre-wrap'>{results.query}</pre>}
 
-        {results &&
+        {results?.data?.csv &&
           <>
             {tab === TAB_RESULTS &&
               <div className='fixed top-0 right-0'>

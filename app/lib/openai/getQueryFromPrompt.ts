@@ -1,9 +1,9 @@
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }))
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 type QueryResponse = {
-  sql?: string
+  sql: string | null
   tokensUsed: number
 }
 
@@ -30,8 +30,8 @@ export default async function getQueryFromPrompt(createTableSyntaxes: string[], 
   `
 
   try {
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemContent },
         { role: 'user', content: prompt }
@@ -39,8 +39,8 @@ export default async function getQueryFromPrompt(createTableSyntaxes: string[], 
     })
 
     return {
-      sql: completion.data.choices[0].message?.content,
-      tokensUsed: completion.data.usage?.total_tokens ?? 0
+      sql: completion.choices[0].message?.content,
+      tokensUsed: completion.usage?.total_tokens ?? 0
     }
   } catch (_err) {
     const error = _err as OpenAIApiError
