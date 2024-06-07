@@ -174,9 +174,9 @@ export default function Index() {
         }
         {results && tab === TAB_QUERY && <pre className='p-8 grow whitespace-pre-wrap'>{results.query}</pre>}
 
-        {results?.data?.csv &&
+        {results &&
           <>
-            {tab === TAB_RESULTS &&
+            {results?.data?.csv && tab === TAB_RESULTS &&
               <div className='fixed top-0 right-0'>
                 <Button
                   type='button'
