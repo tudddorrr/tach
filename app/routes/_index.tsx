@@ -8,6 +8,7 @@ import Link from '~/components/Link'
 import { getTables } from '~/models/lexicon_table.server'
 import { getQueryFromPromptAndExecute } from '~/models/openai_log.server'
 import Fuse from 'fuse.js'
+import ErrorMessage from '~/components/ErrorMessage'
 
 export const meta: V2_MetaFunction = () => {
   return [{ title: 'Query | Tach' }]
@@ -166,17 +167,17 @@ export default function Index() {
         {!results && <pre className='p-8 grow'>Waiting...</pre>}
         {results && tab === TAB_RESULTS &&
           <pre className='p-8 grow whitespace-pre-wrap max-h-screen overflow-y-scroll'>
-            {results.error &&
-              <div role='alert' className='p-4 rounded bg-red-200 text-red-800'>{results.error}</div>
+            {(results.error) &&
+              <ErrorMessage error={results.error} />
             }
-            {!results.error && results.data.csv}
+            {!results.error && (results?.data?.csv ?? <ErrorMessage error='No results - something may have gone wrong' />)}
           </pre>
         }
         {results && tab === TAB_QUERY && <pre className='p-8 grow whitespace-pre-wrap'>{results.query}</pre>}
 
         {results &&
           <>
-            {tab === TAB_RESULTS &&
+            {results?.data?.csv && tab === TAB_RESULTS &&
               <div className='fixed top-0 right-0'>
                 <Button
                   type='button'

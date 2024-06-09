@@ -1,9 +1,9 @@
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }))
+const openai = new OpenAI()
 
 type QueryResponse = {
-  sql?: string
+  sql: string | null
   tokensUsed: number
 }
 
@@ -24,27 +24,23 @@ type OpenAIApiError = Error & {
 export default async function getQueryFromPrompt(createTableSyntaxes: string[], prompt: string, blocklistText: string): Promise<QueryResponse> {
   const systemContent = `
     You are a tool for translation natural language questions about company data into SQL queries that only select data and never modify it.
-    Only return the query and nothing else.
+    These MySQL create table or create view syntaxes are available to use: ${createTableSyntaxes.join(',\n')}
+    The query will be executed directly against the database so only return the query and nothing else (including codeblocks or syntax indicators).
     ${blocklistText ? 'The generated query must never contain references to any of the following columns: ' + blocklistText : ''}
   `
 
-  const userContent = `
-    Using these MySQL tables: ${createTableSyntaxes.join(',\n')}
-    ${prompt}
-  `
-
   try {
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemContent },
-        { role: 'user', content: userContent }
+        { role: 'user', content: prompt }
       ]
     })
 
     return {
-      sql: completion.data.choices[0].message?.content,
-      tokensUsed: completion.data.usage?.total_tokens ?? 0
+      sql: completion.choices[0].message?.content,
+      tokensUsed: completion.usage?.total_tokens ?? 0
     }
   } catch (_err) {
     const error = _err as OpenAIApiError
