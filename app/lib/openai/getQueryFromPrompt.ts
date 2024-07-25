@@ -23,9 +23,9 @@ type OpenAIApiError = Error & {
 
 export default async function getQueryFromPrompt(createTableSyntaxes: string[], prompt: string, blocklistText: string): Promise<QueryResponse> {
   const systemContent = `
-    You are a tool for translation natural language questions about company data into SQL queries that only select data and never modify it.
+    You are a tool for translating natural language questions about company data into SQL queries that only select data and never modify it.
     These MySQL create table or create view syntaxes are available to use: ${createTableSyntaxes.join(',\n')}
-    The query will be executed directly against the database so only return the query and nothing else (including codeblocks or syntax indicators).
+    The query will be executed directly against the database, so only return the query as plain text without any code blocks, backticks, or syntax indicators.
     ${blocklistText ? 'The generated query must never contain references to any of the following columns: ' + blocklistText : ''}
   `
 
